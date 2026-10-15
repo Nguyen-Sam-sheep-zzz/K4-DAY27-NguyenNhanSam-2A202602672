@@ -1,0 +1,102 @@
+{
+  "timestamp_utc": "2026-10-15T07:32:18.358403+00:00",
+  "mode": "real GitHub fetch + real LLM; exercise 1 terminal nodes only; no publishing",
+  "model": "gpt-6-luna",
+  "provider_host": "sv.devquote.shop",
+  "results": [
+    {
+      "pr_url": "https://github.com/VinUni-AI20k/PR-Demo/pull/1",
+      "status": "passed",
+      "head_sha": "164615656d47c67b0857daf02fcd412c55333d5d",
+      "files": [
+        "tasktrack/cli.py",
+        "tasktrack/models.py",
+        "tasktrack/storage.py"
+      ],
+      "decision": "auto_approve",
+      "analysis": {
+        "summary": "Adds a priority field to tasks, persists it in SQLite, orders listed tasks by descending priority, and displays priority markers in the CLI.",
+        "risk_factors": [
+          "The schema change does not migrate existing databases, so installations with a database created before this change will fail when adding or listing tasks.",
+          "Priority values are not restricted to the documented range of 0–2."
+        ],
+        "comments": [
+          {
+            "file": "tasktrack/storage.py",
+            "line": 14,
+            "severity": "issue",
+            "body": "Adding `priority` to `CREATE TABLE IF NOT EXISTS` only affects newly created databases. Existing databases will not gain this column, so the new `INSERT` and `SELECT` statements will fail with `sqlite3.OperationalError: no such column: priority`. Add a migration (for example, inspect the table and `ALTER TABLE` when the column is missing) so existing task data remains usable."
+          },
+          {
+            "file": "tasktrack/cli.py",
+            "line": 14,
+            "severity": "suggestion",
+            "body": "The help text documents priorities as 0, 1, or 2, but `type=int` accepts any integer and storage persists it. Consider using `choices=(0, 1, 2)` or validating in `Storage.add` as well, so unsupported values are rejected rather than displayed as `?`."
+          }
+        ],
+        "confidence": 0.96,
+        "confidence_reasoning": "The supplied diff is sufficient to identify the existing-database schema compatibility issue and the mismatch between documented priority values and accepted CLI input. No surrounding tests or migration conventions were supplied, so broader integration behavior cannot be assessed.",
+        "escalation_questions": []
+      },
+      "elapsed_ms": 11469
+    },
+    {
+      "pr_url": "https://github.com/VinUni-AI20k/PR-Demo/pull/2",
+      "status": "passed",
+      "head_sha": "501f95e016f9cd241cb1a7dd60b9a27102bcb413",
+      "files": [
+        "tasktrack/auth.py",
+        "tasktrack/cli.py",
+        "tasktrack/storage.py",
+        "tasktrack/sync.py"
+      ],
+      "decision": "auto_approve",
+      "analysis": {
+        "summary": "Adds CLI login and sync commands, token helpers, and a user_id column for tasks. The new authentication and sync flow has significant security and correctness problems: tokens are locally derived rather than authenticated by a server, sync sends the bearer token over plain HTTP, and task insertion now interpolates user input into SQL.",
+        "risk_factors": [
+          "The sync endpoint uses HTTP, exposing bearer tokens and task data to interception.",
+          "Login derives a token locally from a weak password hash and process ID, without validating credentials with a service.",
+          "Task titles are interpolated directly into SQL, enabling SQL injection and breaking inserts for titles containing quotes.",
+          "The user_id included in sync payloads is hard-coded and does not reflect the logged-in user."
+        ],
+        "comments": [
+          {
+            "file": "tasktrack/storage.py",
+            "line": 25,
+            "severity": "blocker",
+            "body": "This builds SQL by interpolating `title` directly. A title containing an apostrophe will break the insert, and untrusted input can alter the SQL (including destructive statements). Use a parameterized query as before: `execute(\"INSERT INTO tasks (title, user_id) VALUES (?, ?)\", (title, user_id))`."
+          },
+          {
+            "file": "tasktrack/sync.py",
+            "line": 13,
+            "severity": "blocker",
+            "body": "This sends the bearer token and task data over plain HTTP, so anyone able to observe or intercept network traffic can steal the token and read or modify sync requests. Use HTTPS and ensure the service validates tokens."
+          },
+          {
+            "file": "tasktrack/auth.py",
+            "line": 15,
+            "severity": "issue",
+            "body": "`issue_token` creates a deterministic token locally from an MD5 password hash and PID; it neither verifies credentials with a server nor uses a server-issued secret. The token can be recomputed by anyone who knows the username and password, and PID is not a secure source of entropy. Implement server-side authentication and use a securely generated, server-issued token; use a password-hashing scheme designed for passwords if passwords are stored."
+          },
+          {
+            "file": "tasktrack/sync.py",
+            "line": 22,
+            "severity": "issue",
+            "body": "`_current_user_id()` always returns 1, so sync associates every task with the same user regardless of the account used to log in. Derive the user identity from validated session information or the server-issued token rather than hard-coding it."
+          },
+          {
+            "file": "tasktrack/auth.py",
+            "line": 22,
+            "severity": "suggestion",
+            "body": "The token is written to a predictable file without restricting its permissions. On systems where the default umask allows other users to read it, they can use the bearer token. Create the file with owner-only permissions and consider handling existing-file permissions as well."
+          }
+        ],
+        "confidence": 0.91,
+        "confidence_reasoning": "The identified issues are directly evident in the supplied changes. The diff does not include the sync service contract or surrounding storage/model code, so compatibility and server-side behavior cannot be assessed.",
+        "escalation_questions": []
+      },
+      "elapsed_ms": 11875
+    }
+  ],
+  "github_post_requests": 0
+}

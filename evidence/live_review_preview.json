@@ -1,0 +1,103 @@
+{
+  "timestamp_utc": "2026-10-15T07:41:28.203825+00:00",
+  "mode": "real GitHub fetch + real LLM; exercise 1 terminal nodes only; no publishing",
+  "model": "gpt-6-luna",
+  "provider_host": "sv.devquote.shop",
+  "results": [
+    {
+      "pr_url": "https://github.com/VinUni-AI20k/PR-Demo/pull/1",
+      "status": "passed",
+      "head_sha": "164615656d47c67b0857daf02fcd412c55333d5d",
+      "files": [
+        "tasktrack/cli.py",
+        "tasktrack/models.py",
+        "tasktrack/storage.py"
+      ],
+      "decision": "auto_approve",
+      "analysis": {
+        "summary": "Adds a priority field to tasks, accepts priority on the CLI, stores it in SQLite, and displays and sorts tasks by priority. The schema initialization only creates the new column for fresh databases; it does not migrate existing task databases.",
+        "risk_factors": [
+          "Existing databases created before this change will not have a priority column, so task insertion and listing queries that reference it will fail.",
+          "The CLI accepts any integer as a priority although the documented levels are 0, 1, and 2."
+        ],
+        "comments": [
+          {
+            "file": "tasktrack/storage.py",
+            "line": null,
+            "severity": "issue",
+            "body": "`CREATE TABLE IF NOT EXISTS` does not add `priority` to an existing `tasks` table. After upgrading with a database created by the previous version, `add()` and `list()` will fail with `sqlite3.OperationalError: no such column: priority`. Add a migration (for example, inspect the table and `ALTER TABLE ... ADD COLUMN priority INTEGER NOT NULL DEFAULT 0`) so existing tasks remain usable."
+          },
+          {
+            "file": "tasktrack/cli.py",
+            "line": null,
+            "severity": "suggestion",
+            "body": "The help text defines priorities as 0, 1, or 2, but `type=int` accepts other values. Those values are stored and displayed as `?`, and can affect ordering. Restrict the argument to the supported levels (for example, with `choices=(0, 1, 2)`) or validate it in storage if callers besides the CLI can supply priorities."
+          }
+        ],
+        "confidence": 0.79,
+        "confidence_reasoning": "The diff is small and the key compatibility issue follows directly from SQLite's `CREATE TABLE IF NOT EXISTS` behavior; the changed queries require a column that this code does not add to pre-existing databases. The priority-range concern is also evident from the CLI argument definition and display mapping. Repository context such as migration conventions and tests was not provided, but does not prevent identifying these issues.",
+        "escalation_questions": []
+      },
+      "elapsed_ms": 14016,
+      "source": "live_review_retry_failure.json, first result"
+    },
+    {
+      "status": "passed",
+      "pr_url": "https://github.com/VinUni-AI20k/PR-Demo/pull/2",
+      "head_sha": "501f95e016f9cd241cb1a7dd60b9a27102bcb413",
+      "analysis": {
+        "summary": "Adds login and cloud-push commands, token helpers, a user_id task column, and a sync request. The changes also alter task insertion and introduce client-side authentication and data-isolation behavior that need correction and clarification.",
+        "risk_factors": [
+          "Existing databases are not migrated when the tasks table gains user_id.",
+          "Login creates a token entirely on the client; there is no visible server authentication or token-validation contract.",
+          "The sync request sends a bearer token over HTTP, exposing it to interception.",
+          "Task insertion now builds SQL from user-controlled input, and sync assigns every task the same hard-coded user ID."
+        ],
+        "comments": [
+          {
+            "file": "tasktrack/storage.py",
+            "line": 26,
+            "severity": "blocker",
+            "body": "This interpolates `title` directly into SQL, so a title containing a quote can break the insert, and crafted input can alter the query. Keep parameterized SQL here: `INSERT INTO tasks (title, user_id) VALUES (?, ?)` with `(title, user_id)`."
+          },
+          {
+            "file": "tasktrack/storage.py",
+            "line": 15,
+            "severity": "issue",
+            "body": "Adding this column to `CREATE TABLE IF NOT EXISTS` does not update databases that already have a `tasks` table. On those installs, the new insert references a nonexistent `user_id` column and fails. Please add a schema migration (and define how existing tasks are assigned) before relying on this column."
+          },
+          {
+            "file": "tasktrack/sync.py",
+            "line": 12,
+            "severity": "issue",
+            "body": "This sends the bearer token over plain HTTP, where it can be observed or modified in transit. Use HTTPS and ensure the endpoint's certificate is verified before transmitting credentials or task data."
+          },
+          {
+            "file": "tasktrack/auth.py",
+            "line": 10,
+            "severity": "issue",
+            "body": "This is a fast, unsalted MD5 password hash, and `issue_token` derives a repeatable token locally rather than authenticating with a server. Passwords are vulnerable to offline guessing, and the client has no basis to know whether credentials are valid. Please use a server-authenticated login/token flow and an appropriate password-hashing scheme on the server; avoid treating this locally generated value as a credential."
+          },
+          {
+            "file": "tasktrack/sync.py",
+            "line": 20,
+            "severity": "issue",
+            "body": "`_current_user_id()` returns 1 for every task, regardless of the logged-in user or the `user_id` stored on the task. This can associate unrelated users' tasks with the same account on the server. Derive identity from a validated session and define how local tasks are assigned to that user; do not hard-code it."
+          }
+        ],
+        "confidence": 0.52,
+        "confidence_reasoning": "The diff exposes several concrete defects, but this is a cross-cutting authentication and data-isolation change with no server contract or tests shown. In particular, the intended token issuance/validation flow and ownership semantics are unclear, so the review is not complete enough for publication without context.",
+        "escalation_questions": [
+          "What server-side login and token-validation contract is this client intended to use, and is the locally derived token accepted or validated by that service?",
+          "How are existing task databases migrated, and what owner should be assigned to tasks created before login?",
+          "How should task ownership be represented during sync, and how does the client obtain the authenticated user's ID rather than the current hard-coded value?"
+        ]
+      },
+      "decision": "escalate",
+      "source": "live_pr2_diagnostic.json; separate successful retry with identical model and shared prompt"
+    }
+  ],
+  "github_post_requests": 0,
+  "collection_note": "Latest successful result per PR, from separate attempts. Transient failures and earlier confidence variation are retained in sibling evidence files.",
+  "prompt_sha256": "33511d0088fb7acd82d890eb557c9bd3c2de0c4891b8b19f0e333f12f46d50ef"
+}

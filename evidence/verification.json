@@ -1,0 +1,47 @@
+{
+  "timestamp_utc": "2026-10-15T07:43:50.704823+00:00",
+  "branch": "feature/lab27-completion",
+  "checks": {
+    "tests": {
+      "command": "python -X utf8 -m unittest discover -s tests -v",
+      "count": 31,
+      "seconds": 16.82,
+      "status": "passed"
+    },
+    "compileall": {
+      "status": "passed"
+    },
+    "diff_check": {
+      "status": "passed"
+    },
+    "provided_files": {
+      "status": "passed",
+      "files": 7,
+      "mismatched_paths": []
+    },
+    "secrets": {
+      "status": "passed",
+      "candidate_files": 63,
+      "matching_paths": [],
+      "env_ignored": true,
+      "scope": "exact local/inherited credential values in Git candidate files; not a historical or entropy scan"
+    },
+    "live_preflight": {
+      "github": "passed",
+      "llm": "passed",
+      "model": "gpt-6-luna"
+    },
+    "dependency_sync": {
+      "status": "passed",
+      "command": "uv sync --locked --offline --cache-dir .cache/uv",
+      "resolved": 80,
+      "installed_checked": 79
+    }
+  },
+  "publication": {
+    "github_comments_posted": 0,
+    "committed": false,
+    "pushed": false,
+    "submitted": false
+  }
+}

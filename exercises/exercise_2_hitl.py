@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import uuid
 
-from dotenv import load_dotenv
+from exercises.runtime import load_runtime_env
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
@@ -19,6 +19,7 @@ from rich.panel import Panel
 
 from common.github import fetch_pr, post_review_comment
 from common.llm import get_llm
+from exercises.review_helpers import REVIEW_PROMPT, approval_payload, validate_approval, render_comment_body, checkpoint_serializer
 from common.schemas import (
     AUTO_APPROVE_THRESHOLD,
     ESCALATE_THRESHOLD,
@@ -43,7 +44,7 @@ def node_analyze(state: ReviewState) -> dict:
     llm = get_llm().with_structured_output(PRAnalysis)
     with console.status("[dim]LLM reviewing the diff...[/dim]"):
         analysis = llm.invoke([
-            {"role": "system", "content": "Senior reviewer. Structured output."},
+            {"role": "system", "content": REVIEW_PROMPT},
             {"role": "user", "content": f"Title: {state['pr_title']}\nDiff:\n{state['pr_diff']}"},
         ])
     console.print(f"  [green]✓[/green] confidence={analysis.confidence:.0%}, {len(analysis.comments)} comment(s)")
@@ -62,29 +63,19 @@ def node_route(state: ReviewState) -> dict:
 
 def node_human_approval(state: ReviewState) -> dict:
     """Pause and ask the human."""
-    a = state["analysis"]
-    # TODO: call interrupt(payload) where payload contains these fields:
-    #         "kind": "approval_request",
-    #         "confidence": a.confidence,
-    #         "confidence_reasoning": a.confidence_reasoning,
-    #         "summary": a.summary,
-    #         "comments": [c.model_dump() for c in a.comments],
-    #         "diff_preview": state["pr_diff"][:2000],
-    # interrupt() returns whatever the caller passes via Command(resume=...).
-    # response = interrupt(...)
-    # return {"human_choice": response["choice"], "human_feedback": response.get("feedback")}
-    raise NotImplementedError("Call interrupt() with an approval_request payload")
+    payload = approval_payload(state)
+    while True:
+        response = validate_approval(interrupt(payload))
+        if response["choice"] == "edit":
+            payload = {**payload, "phase": "edited_review", "review_body": response["edited_body"]}
+            continue
+        return {"human_choice": response["choice"], "human_feedback": response["feedback"],
+                "posted_comment_body": payload["review_body"]}
 
 
 def _render_comment_body(state: ReviewState) -> str:
     """Build the Markdown comment body posted back to the PR."""
-    a = state["analysis"]
-    lines = [f"### Automated review (confidence {a.confidence:.0%})", "", a.summary, ""]
-    for c in a.comments:
-        lines.append(f"- **[{c.severity}]** `{c.file}:{c.line or '?'}` — {c.body}")
-    if state.get("human_feedback"):
-        lines.append(f"\n_Reviewer note: {state['human_feedback']}_")
-    return "\n".join(lines)
+    return render_comment_body(state)
 
 
 def _post(state: ReviewState, label: str) -> str:
@@ -133,8 +124,7 @@ def build_graph():
     g.add_edge("human_approval", "commit")
     g.add_edge("commit", END)
     g.add_edge("escalate", END)
-    # TODO: compile with checkpointer=MemorySaver()
-    return g.compile()
+    return g.compile(checkpointer=MemorySaver(serde=checkpoint_serializer()))
 
 
 def prompt_human(payload: dict) -> dict:
@@ -151,15 +141,25 @@ def prompt_human(payload: dict) -> dict:
         console.print("\n[dim]--- diff preview ---[/dim]")
         console.print(payload["diff_preview"])
 
+    if payload.get("review_body"):
+        console.print("Review to publish:")
+        console.print(payload["review_body"], markup=False)
+
     choice = ""
     while choice not in {"approve", "reject", "edit"}:
         choice = console.input("\n[bold]Choice (approve/reject/edit)?[/bold] ").strip().lower()
     feedback = console.input("Feedback: ").strip() if choice != "approve" else ""
-    return {"choice": choice, "feedback": feedback}
+    response = {"choice": choice, "feedback": feedback}
+    if choice == "edit":
+        replacement = ""
+        while not replacement:
+            replacement = console.input("Replacement review body (confirm on next prompt): ").strip()
+        response["edited_body"] = replacement
+    return response
 
 
 def main() -> None:
-    load_dotenv()
+    load_runtime_env()
     parser = argparse.ArgumentParser()
     parser.add_argument("--pr", required=True)
     args = parser.parse_args()
@@ -174,12 +174,9 @@ def main() -> None:
 
     result = app.invoke({"pr_url": args.pr, "thread_id": thread_id}, cfg)
 
-    # TODO: write a `while "__interrupt__" in result:` loop:
-    #   - take payload from result["__interrupt__"][0].value
-    #   - call prompt_human(payload)
-    #   - resume with app.invoke(Command(resume=<answer>), cfg)
-    # while "__interrupt__" in result:
-    #     ...
+    while "__interrupt__" in result:
+        payload = result["__interrupt__"][0].value
+        result = app.invoke(Command(resume=prompt_human(payload)), cfg)
 
     console.rule("Done")
     console.print(result.get("final_action"))

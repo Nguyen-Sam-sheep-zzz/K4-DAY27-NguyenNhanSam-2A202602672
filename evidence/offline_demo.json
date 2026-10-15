@@ -1,0 +1,98 @@
+{
+  "timestamp_utc": "2026-10-15T07:15:39.950060+00:00",
+  "mode": "fixture only; zero external calls",
+  "scenarios": [
+    {
+      "scenario": "auto",
+      "input_type": "fixture",
+      "thread_id": "fixture-auto-15bb851d",
+      "confidence": 0.9,
+      "branch": "auto_approve",
+      "final_action": "auto_committed",
+      "post_attempts": 1,
+      "events": 4,
+      "result": "passed"
+    },
+    {
+      "scenario": "approve",
+      "input_type": "fixture",
+      "thread_id": "fixture-approve-47171b4d",
+      "confidence": 0.65,
+      "branch": "human_approval",
+      "final_action": "committed",
+      "post_attempts": 1,
+      "events": 6,
+      "result": "passed"
+    },
+    {
+      "scenario": "reject",
+      "input_type": "fixture",
+      "thread_id": "fixture-reject-1a004809",
+      "confidence": 0.65,
+      "branch": "human_approval",
+      "final_action": "rejected",
+      "post_attempts": 0,
+      "events": 6,
+      "result": "passed"
+    },
+    {
+      "scenario": "edit",
+      "input_type": "fixture",
+      "thread_id": "fixture-edit-a9f99029",
+      "confidence": 0.65,
+      "branch": "human_approval",
+      "final_action": "committed",
+      "post_attempts": 1,
+      "events": 8,
+      "result": "passed"
+    },
+    {
+      "scenario": "escalate_approve",
+      "input_type": "fixture",
+      "thread_id": "fixture-escalate_approve-6cba5257",
+      "confidence": 0.4,
+      "branch": "escalate",
+      "final_action": "committed",
+      "post_attempts": 1,
+      "events": 9,
+      "result": "passed"
+    },
+    {
+      "scenario": "escalate_reject",
+      "input_type": "fixture",
+      "thread_id": "fixture-escalate_reject-e9448a62",
+      "confidence": 0.4,
+      "branch": "escalate",
+      "final_action": "rejected",
+      "post_attempts": 0,
+      "events": 9,
+      "result": "passed"
+    },
+    {
+      "scenario": "post_failure",
+      "input_type": "fixture",
+      "thread_id": "fixture-post_failure-6de57b8d",
+      "confidence": 0.9,
+      "branch": "auto_approve",
+      "final_action": "auto_commit_failed",
+      "post_attempts": 1,
+      "events": 4,
+      "result": "passed"
+    },
+    {
+      "scenario": "resume",
+      "input_type": "fixture",
+      "thread_id": "fixture-resume-e45aa8f9",
+      "confidence": 0.65,
+      "branch": "human_approval",
+      "final_action": "committed",
+      "post_attempts": 1,
+      "events": 6,
+      "result": "passed"
+    }
+  ],
+  "preview_threads": {
+    "approval": "fixture-preview-approval-9fe94de0",
+    "escalation": "fixture-preview-escalation-35b22fe3"
+  }
+}

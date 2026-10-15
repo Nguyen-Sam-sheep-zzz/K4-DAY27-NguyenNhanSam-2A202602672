@@ -1,0 +1,9 @@
+scenario,input_type,thread_id,confidence,branch,final_action,post_attempts,events,result
+auto,fixture,fixture-auto-15bb851d,0.9,auto_approve,auto_committed,1,4,passed
+approve,fixture,fixture-approve-47171b4d,0.65,human_approval,committed,1,6,passed
+reject,fixture,fixture-reject-1a004809,0.65,human_approval,rejected,0,6,passed
+edit,fixture,fixture-edit-a9f99029,0.65,human_approval,committed,1,8,passed
+escalate_approve,fixture,fixture-escalate_approve-6cba5257,0.4,escalate,committed,1,9,passed
+escalate_reject,fixture,fixture-escalate_reject-e9448a62,0.4,escalate,rejected,0,9,passed
+post_failure,fixture,fixture-post_failure-6de57b8d,0.9,auto_approve,auto_commit_failed,1,4,passed
+resume,fixture,fixture-resume-e45aa8f9,0.65,human_approval,committed,1,6,passed

@@ -1,0 +1,50 @@
+{
+  "timestamp_utc": "2026-10-15T07:33:32.196092+00:00",
+  "mode": "real GitHub fetch + real LLM; exercise 1 terminal nodes only; no publishing",
+  "model": "gpt-6-luna",
+  "provider_host": "sv.devquote.shop",
+  "results": [
+    {
+      "pr_url": "https://github.com/VinUni-AI20k/PR-Demo/pull/1",
+      "status": "passed",
+      "head_sha": "164615656d47c67b0857daf02fcd412c55333d5d",
+      "files": [
+        "tasktrack/cli.py",
+        "tasktrack/models.py",
+        "tasktrack/storage.py"
+      ],
+      "decision": "human_approval",
+      "analysis": {
+        "summary": "Adds a priority field to tasks, exposes it as an option when adding tasks, and displays and sorts tasks by priority. The new database column works for fresh databases, but the initialization path does not migrate existing databases.",
+        "risk_factors": [
+          "Existing task databases are not upgraded to include the new column; listing tasks against one will fail.",
+          "Priority values are not constrained to the documented 0–2 range."
+        ],
+        "comments": [
+          {
+            "file": "tasktrack/storage.py",
+            "line": 13,
+            "severity": "issue",
+            "body": "`CREATE TABLE IF NOT EXISTS` does not add columns to an existing `tasks` table. Users with a database created before this change will therefore hit `sqlite3.OperationalError: no such column: priority` when `list()` runs its new query. Add a migration (for example, inspect the table and `ALTER TABLE ... ADD COLUMN priority INTEGER NOT NULL DEFAULT 0`) so existing tasks remain usable."
+          },
+          {
+            "file": "tasktrack/cli.py",
+            "line": 14,
+            "severity": "suggestion",
+            "body": "The CLI accepts any integer here, although the help text defines only 0, 1, and 2. Other values are stored and displayed with `?` (and negative values sort ahead of urgent tasks). Consider validating the range at the CLI and storage boundary, or otherwise defining how unsupported values should behave."
+          }
+        ],
+        "confidence": 0.67,
+        "confidence_reasoning": "The diff clearly exposes a backward-compatibility failure for existing databases, and the changed priority input has no range validation. The migration strategy is not shown, so a human should confirm whether existing database files are supported and how they are expected to be upgraded; the review is otherwise bounded to the changes shown.",
+        "escalation_questions": []
+      },
+      "elapsed_ms": 11297
+    },
+    {
+      "pr_url": "https://github.com/VinUni-AI20k/PR-Demo/pull/2",
+      "status": "failed",
+      "error_type": "InternalServerError"
+    }
+  ],
+  "github_post_requests": 0
+}

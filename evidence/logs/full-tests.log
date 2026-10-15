@@ -1,0 +1,110 @@
+test_auto_post_failure_is_not_success (test_audit_resume.AuditResumeTests.test_auto_post_failure_is_not_success) ... ok
+test_cli_escalation_still_posts_refined_review_without_extra_confirm (test_audit_resume.AuditResumeTests.test_cli_escalation_still_posts_refined_review_without_extra_confirm) ... ok
+test_edit_is_persisted_then_requires_approval (test_audit_resume.AuditResumeTests.test_edit_is_persisted_then_requires_approval) ... ok
+test_final_confirmation_reject_wins_over_escalation_answers (test_audit_resume.AuditResumeTests.test_final_confirmation_reject_wins_over_escalation_answers) ... ok
+test_new_connection_resumes_without_refetch_or_duplicate_request (test_audit_resume.AuditResumeTests.test_new_connection_resumes_without_refetch_or_duplicate_request) ... ok
+test_provider_failure_is_audited_without_post (test_audit_resume.AuditResumeTests.test_provider_failure_is_audited_without_post) ... ok
+test_boundary_values_route_without_rounding (test_confidence_routing.ConfidenceRoutingTests.test_boundary_values_route_without_rounding) ... → route
+→ route
+→ route
+→ route
+→ route
+→ route
+→ route
+ok
+test_complete_graph_reaches_each_branch_with_analysis (test_confidence_routing.ConfidenceRoutingTests.test_complete_graph_reaches_each_branch_with_analysis) ... → fetch_pr
+  ✓ 1 files, head aaaaaaa
+→ analyze
+→ route
+✓ AUTO APPROVE — high confidence, no human needed
+→ fetch_pr
+  ✓ 1 files, head aaaaaaa
+→ analyze
+→ route
+✓ HUMAN APPROVAL — placeholder, exercise 2 will pause here
+→ fetch_pr
+  ✓ 1 files, head aaaaaaa
+→ analyze
+→ route
+✓ ESCALATE — placeholder, exercise 3 will ask the reviewer questions
+ok
+test_approval_waits_then_posts_once (test_hitl_flow.HumanApprovalTests.test_approval_waits_then_posts_once) ... → fetch_pr
+  ✓ 1 files, head aaaaaaa
+→ analyze
+  ✓ confidence=65%, 1 comment(s)
+→ route
+  ✓ decision=human_approval (confidence=65%)
+→ commit
+  ✓ posted comment to https://github.com/example/lab/pull/1
+ok
+test_edit_requires_second_approval_and_publishes_edited_body (test_hitl_flow.HumanApprovalTests.test_edit_requires_second_approval_and_publishes_edited_body) ... → fetch_pr
+  ✓ 1 files, head aaaaaaa
+→ analyze
+  ✓ confidence=65%, 1 comment(s)
+→ route
+  ✓ decision=human_approval (confidence=65%)
+→ commit
+  ✓ posted comment to https://github.com/example/lab/pull/1
+ok
+test_escalation_rejects_missing_answers_before_synthesis (test_hitl_flow.HumanApprovalTests.test_escalation_rejects_missing_answers_before_synthesis) ... → fetch_pr
+  ✓ 1 files, head aaaaaaa
+→ analyze
+  ✓ confidence=40%, 1 question(s)
+→ route
+  ✓ decision=escalate (confidence=40%)
+ok
+test_escalation_uses_initial_analysis_diff_and_answers (test_hitl_flow.HumanApprovalTests.test_escalation_uses_initial_analysis_diff_and_answers) ... → fetch_pr
+  ✓ 1 files, head aaaaaaa
+→ analyze
+  ✓ confidence=40%, 1 question(s)
+→ route
+  ✓ decision=escalate (confidence=40%)
+→ commit
+  ✓ posted comment to https://github.com/example/lab/pull/1
+ok
+test_invalid_choice_never_publishes (test_hitl_flow.HumanApprovalTests.test_invalid_choice_never_publishes) ... → fetch_pr
+  ✓ 1 files, head aaaaaaa
+→ analyze
+  ✓ confidence=65%, 1 comment(s)
+→ route
+  ✓ decision=human_approval (confidence=65%)
+ok
+test_reject_does_not_publish (test_hitl_flow.HumanApprovalTests.test_reject_does_not_publish) ... → fetch_pr
+  ✓ 1 files, head aaaaaaa
+→ analyze
+  ✓ confidence=65%, 1 comment(s)
+→ route
+  ✓ decision=human_approval (confidence=65%)
+→ commit
+  · skipping comment (choice=reject)
+ok
+test_three_processes_pause_resume_then_restore_without_duplicate_post (test_process_recovery.ProcessRecoveryTests.test_three_processes_pause_resume_then_restore_without_duplicate_post) ... ok
+test_compatible_key_without_endpoint_cannot_fall_back_to_openrouter (test_runtime.RuntimeConfigurationTests.test_compatible_key_without_endpoint_cannot_fall_back_to_openrouter) ... ok
+test_explicit_local_provider_key_takes_priority_over_inherited_key (test_runtime.RuntimeConfigurationTests.test_explicit_local_provider_key_takes_priority_over_inherited_key) ... ok
+test_local_endpoint_is_paired_with_local_key_over_desktop_endpoint (test_runtime.RuntimeConfigurationTests.test_local_endpoint_is_paired_with_local_key_over_desktop_endpoint) ... ok
+test_missing_openai_key_does_not_reuse_stale_other_provider_key (test_runtime.RuntimeConfigurationTests.test_missing_openai_key_does_not_reuse_stale_other_provider_key) ... ok
+test_openai_compatible_key_maps_in_process_without_rewriting_env (test_runtime.RuntimeConfigurationTests.test_openai_compatible_key_maps_in_process_without_rewriting_env) ... ok
+test_openrouter_configuration_keeps_its_own_key (test_runtime.RuntimeConfigurationTests.test_openrouter_configuration_keeps_its_own_key) ... ok
+test_load_and_reopen_completed_thread_never_reposts (test_sessions.SessionTests.test_load_and_reopen_completed_thread_never_reposts) ... ok
+test_recent_sessions_use_risk_order_instead_of_alphabetical_max (test_sessions.SessionTests.test_recent_sessions_use_risk_order_instead_of_alphabetical_max) ... ok
+test_unknown_session_and_resume_without_checkpoint_are_rejected (test_sessions.SessionTests.test_unknown_session_and_resume_without_checkpoint_are_rejected) ... ok
+test_approve_posts_and_rerun_does_not_repeat (test_streamlit_app.StreamlitTests.test_approve_posts_and_rerun_does_not_repeat) ... 2026-10-15 14:42:17.557 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_escalation_requires_answers_and_final_confirmation (test_streamlit_app.StreamlitTests.test_escalation_requires_answers_and_final_confirmation) ... 2026-10-15 14:42:19.536 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_failed_auto_post_is_error_not_success (test_streamlit_app.StreamlitTests.test_failed_auto_post_is_error_not_success) ... 2026-10-15 14:42:20.126 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_manual_edit_is_previewed_and_requires_second_approval (test_streamlit_app.StreamlitTests.test_manual_edit_is_previewed_and_requires_second_approval) ... 2026-10-15 14:42:20.521 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_new_browser_session_restores_from_thread_query_parameter (test_streamlit_app.StreamlitTests.test_new_browser_session_restores_from_thread_query_parameter) ... 2026-10-15 14:42:21.132 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-15 14:42:21.502 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_reject_has_no_external_post (test_streamlit_app.StreamlitTests.test_reject_has_no_external_post) ... 2026-10-15 14:42:21.816 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_synthesis_failure_recovers_from_checkpoint_instead_of_stale_question_form (test_streamlit_app.StreamlitTests.test_synthesis_failure_recovers_from_checkpoint_instead_of_stale_question_form) ... 2026-10-15 14:42:22.275 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+
+----------------------------------------------------------------------
+Ran 31 tests in 16.820s
+
+OK
