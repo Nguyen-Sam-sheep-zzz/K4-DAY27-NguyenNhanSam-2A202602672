@@ -1,179 +1,224 @@
-"""Exercise 5 — Streamlit approval UI for the HITL PR review agent.
+"""Exercise 5 — browser approval UI backed by durable LangGraph sessions.
 
-Run with:
-    uv run streamlit run app.py
-
-Goal: wrap the LangGraph built in exercises 1–4 in a web UI that adapts to
-the confidence bucket of each PR.
-
-Routing thresholds (common/schemas.py):
-    > 72%        auto_approve     UI shows a success card; reviewer does nothing
-    58 – 72%     human_approval   UI shows Approve / Reject / Edit buttons
-    <  58%       escalate         UI shows a question form for the reviewer
+Run: uv run streamlit run app.py
 """
-
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import re
 import uuid
+from urllib.parse import urlsplit
 
 import streamlit as st
-from dotenv import load_dotenv
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from langgraph.types import Command
+from exercises.runtime import load_runtime_env
 
-from common.db import db_path
-# TODO: import the graph builder + helpers from your exercise 4 solution.
-# Suggestion: rename `exercises/exercise_4_audit.py` functions you need
-# (build_graph, handle_interrupt logic) and import them here, OR copy the
-# graph wiring inline.
-# from exercises.exercise_4_audit import build_graph
+from common.db import replay_events
+from exercises.sessions import invoke_review, list_recent_sessions, load_session
 
-
-load_dotenv()
+load_runtime_env()
+st.set_page_config(page_title="HITL PR Review", page_icon="🔎", layout="wide")
+for key, default in {"thread_id": None, "pr_url": "", "interrupt_payload": None,
+                     "final": None, "error": None, "retryable": False}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
 
 
-# ─── Session state ─────────────────────────────────────────────────────────
-if "thread_id" not in st.session_state:
-    st.session_state.thread_id = None
-if "pr_url" not in st.session_state:
-    st.session_state.pr_url = ""
-if "interrupt_payload" not in st.session_state:
-    st.session_state.interrupt_payload = None
-if "final" not in st.session_state:
-    st.session_state.final = None
+def normalize_pr_url(value):
+    parts = urlsplit(value.strip())
+    if parts.scheme != "https" or parts.netloc != "github.com" or not re.fullmatch(r"/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/pull/[1-9][0-9]*/?", parts.path):
+        raise ValueError("Enter a GitHub PR URL: https://github.com/owner/repository/pull/123")
+    return "https://github.com" + parts.path.rstrip("/")
 
 
-# ─── Page setup ────────────────────────────────────────────────────────────
-st.set_page_config(page_title="HITL PR Review", layout="wide")
-st.title("HITL PR Review Agent")
+def accept_result(result):
+    st.session_state.error = None
+    st.session_state.pr_url = result.get("pr_url", st.session_state.pr_url)
+    st.session_state.retryable = result.get("retryable", False)
+    if result.get("__interrupt__"):
+        st.session_state.interrupt_payload = result["__interrupt__"][0].value
+        st.session_state.final = None
+    else:
+        st.session_state.interrupt_payload = None
+        st.session_state.final = result if result.get("final_action") else None
 
 
-# ─── Sidebar — recent sessions ─────────────────────────────────────────────
-with st.sidebar:
-    st.header("Recent sessions")
-    # TODO: call `audit.replay.list_threads`-style query against audit_events
-    # and render thread_id + pr_url + worst_risk + last_event as a small table.
-    # On row click, set st.session_state.thread_id and rerun.
-    st.caption("(TODO — populate from audit_events)")
+async def run_graph(pr_url, thread_id, resume_value=None):
+    return await invoke_review(pr_url, thread_id, resume_value, confirm_after_escalation=True)
 
 
-# ─── Top form — start a new review ─────────────────────────────────────────
-with st.form("start"):
-    pr_url = st.text_input(
-        "PR URL", value=st.session_state.pr_url,
-        placeholder="https://github.com/VinUni-AI20k/PR-Demo/pull/1",
-    )
-    submitted = st.form_submit_button("Run review")
+def restore_thread(thread_id):
+    result = asyncio.run(load_session(thread_id))
+    st.session_state.thread_id = thread_id
+    st.query_params["thread"] = thread_id
+    accept_result(result)
 
 
-# ─── Renderers per interrupt kind ──────────────────────────────────────────
-def render_approval_card(payload: dict) -> dict | None:
-    """58–72% bucket: show the LLM review + 3 buttons. Return resume dict or None."""
-    conf = payload["confidence"]
-    st.subheader(f"Approval requested — confidence {conf:.0%}")
+def recover_after_error(message):
+    # Resume may have advanced past the visible interrupt before failing.
+    # The checkpoint, rather than the old browser form, is authoritative.
+    try:
+        accept_result(asyncio.run(load_session(st.session_state.thread_id)))
+    except Exception:
+        st.session_state.interrupt_payload = None
+        st.session_state.final = None
+        st.session_state.retryable = False
+    st.session_state.error = message
+
+
+def perform_review(resume_value=None):
+    try:
+        result = asyncio.run(run_graph(st.session_state.pr_url, st.session_state.thread_id, resume_value))
+        accept_result(result)
+    except (ValueError, RuntimeError) as exc:
+        recover_after_error(str(exc))
+    except Exception:
+        recover_after_error("Operation failed. Inspect this session's audit trail and configuration.")
+
+
+def render_approval_card(payload):
+    phase = payload.get("phase", "review")
+    heading = "Confirm refined review" if phase == "after_escalation" else "Confirm edited review" if phase == "edited_review" else "Approval requested"
+    st.subheader(heading)
+    st.metric("Review confidence", f"{payload['confidence']:.1%}")
     st.caption(payload["confidence_reasoning"])
-    st.markdown(payload["summary"])
-
-    for c in payload.get("comments", []):
-        st.markdown(f"- **[{c['severity']}]** `{c['file']}:{c.get('line') or '?'}` — {c['body']}")
-
+    st.markdown(payload["review_body"])
     with st.expander("Diff"):
         st.code(payload.get("diff_preview", ""), language="diff")
-
-    feedback = st.text_input("Feedback (optional)", key="approval_feedback")
-    col1, col2, col3 = st.columns(3)
-    # TODO: hook up the three buttons. Each click should return one of:
-    #   {"choice": "approve", "feedback": feedback}
-    #   {"choice": "reject",  "feedback": feedback}
-    #   {"choice": "edit",    "feedback": feedback}
-    if col1.button("Approve", type="primary"):
-        ...  # return {"choice": "approve", ...}
-    if col2.button("Reject"):
-        ...
-    if col3.button("Edit"):
-        ...
-    return None
-
-
-def render_escalation_card(payload: dict) -> dict | None:
-    """< 58% bucket: show risk factors + question form. Return {question: answer} or None."""
-    conf = payload["confidence"]
-    st.subheader(f"Strong escalation — confidence {conf:.0%}")
-    st.caption(payload["confidence_reasoning"])
-    if payload.get("risk_factors"):
-        st.error("Risks: " + ", ".join(payload["risk_factors"]))
-    st.markdown(payload["summary"])
-
-    with st.form("escalation"):
-        # TODO: render one text_input per question in payload["questions"]
-        #       collect answers into a dict {question: answer_str}
-        #       on submit, return the dict.
-        answers: dict[str, str] = {}
-        st.form_submit_button("Submit answers")
-    return None
-
-
-# ─── Drive the graph ───────────────────────────────────────────────────────
-async def run_graph(pr_url: str, thread_id: str, resume_value=None):
-    """Invoke the graph once. Returns the final result or {'__interrupt__': ...}."""
-    async with AsyncSqliteSaver.from_conn_string(db_path()) as cp:
-        await cp.setup()
-        # TODO: build the graph with `cp` as the checkpointer (use the function
-        # you imported/copied at the top of this file).
-        # app = build_graph(cp)
-        cfg = {"configurable": {"thread_id": thread_id}}
-
-        # TODO:
-        # - If resume_value is None: result = await app.ainvoke(
-        #       {"pr_url": pr_url, "thread_id": thread_id}, cfg)
-        # - Else:                    result = await app.ainvoke(
-        #       Command(resume=resume_value), cfg)
-        # - Return result.
-        raise NotImplementedError("Wire up the graph invocation")
-
-
-# ─── Main flow ─────────────────────────────────────────────────────────────
-if submitted and pr_url:
-    st.session_state.pr_url = pr_url
-    st.session_state.thread_id = str(uuid.uuid4())
-    st.session_state.interrupt_payload = None
-    st.session_state.final = None
-
-    with st.spinner("Fetching PR + asking the LLM..."):
-        result = asyncio.run(run_graph(pr_url, st.session_state.thread_id))
-
-    if "__interrupt__" in result:
-        st.session_state.interrupt_payload = result["__interrupt__"][0].value
-    else:
-        st.session_state.final = result
-
-# Render the current interrupt card, if any
-payload = st.session_state.interrupt_payload
-if payload is not None:
-    kind = payload["kind"]
-    answer = render_approval_card(payload) if kind == "approval_request" else render_escalation_card(payload)
-    if answer is not None:
-        with st.spinner("Resuming..."):
-            result = asyncio.run(run_graph(
-                st.session_state.pr_url, st.session_state.thread_id, resume_value=answer,
-            ))
-        if "__interrupt__" in result:
-            st.session_state.interrupt_payload = result["__interrupt__"][0].value
+        st.caption("Preview shows up to 2,000 characters. Open the PR for the full diff.")
+    # Phase and review text make edits receive a fresh widget after resume.
+    revision = hashlib.sha256(payload["review_body"].encode()).hexdigest()[:12]
+    suffix = f"{st.session_state.thread_id}_{phase}_{revision}"
+    body = st.text_area("Review text", value=payload["review_body"], height=180, key=f"body_{suffix}",
+                        help="Change the text and select Edit to preview it before approving.")
+    feedback = st.text_input("Feedback (optional)", key=f"feedback_{suffix}")
+    approve, reject, edit = st.columns(3)
+    if approve.button("Approve", type="primary"):
+        return {"choice": "approve", "feedback": feedback}
+    if reject.button("Reject"):
+        return {"choice": "reject", "feedback": feedback}
+    if edit.button("Edit"):
+        if not body.strip():
+            st.warning("The replacement review cannot be empty.")
         else:
-            st.session_state.interrupt_payload = None
-            st.session_state.final = result
+            return {"choice": "edit", "feedback": feedback, "edited_body": body}
+    return None
+
+
+def render_escalation_card(payload):
+    st.subheader("Strong escalation — reviewer context needed")
+    st.metric("Review confidence", f"{payload['confidence']:.1%}")
+    st.caption(payload["confidence_reasoning"])
+    st.markdown(payload["summary"])
+    if payload.get("risk_factors"):
+        st.error("Risks: " + "; ".join(payload["risk_factors"]))
+    with st.form(f"escalation_{st.session_state.thread_id}"):
+        answers = {q: st.text_area(q, key=f"question_{st.session_state.thread_id}_{i}")
+                   for i, q in enumerate(payload["questions"])}
+        if st.form_submit_button("Submit answers"):
+            if any(not value.strip() for value in answers.values()):
+                st.warning("Answer every question; say unknown where context is unavailable.")
+            else:
+                return {q: value.strip() for q, value in answers.items()}
+    return None
+
+
+st.title("HITL PR Review Agent")
+st.caption("Review a pull request, resolve uncertainty, and keep a traceable decision history.")
+
+# A browser refresh creates a new Streamlit session; recover using the URL.
+if st.session_state.thread_id is None and st.query_params.get("thread"):
+    try:
+        restore_thread(st.query_params["thread"])
+    except Exception:
+        st.session_state.error = "This saved session could not be loaded. Choose a recent session or start a new review."
+
+with st.sidebar:
+    st.header("Recent sessions")
+    try:
+        rows = asyncio.run(list_recent_sessions())
+        by_id = {row["thread_id"]: row for row in rows}
+        selected = st.selectbox("Saved session", [""] + list(by_id),
+                                format_func=lambda value: "Choose a session" if not value else
+                                f"{by_id[value]['worst_risk'].upper()} · {value[:8]} · {by_id[value]['pr_url'].split('/')[-1]}")
+        if st.button("Open session", disabled=not selected):
+            try:
+                restore_thread(selected)
+                st.rerun()
+            except (ValueError, RuntimeError):
+                st.error("No saved graph state is available for this session.")
+        if selected:
+            row = by_id[selected]
+            st.caption(f"Last event: {row['last_event']} · {row['events']} events")
+            st.write(row["pr_url"])
+    except Exception:
+        st.warning("Recent sessions are temporarily unavailable.")
+    st.divider()
+    st.caption("≥73%: automatic · 58–<73%: approval · <58%: questions")
+
+with st.form("start"):
+    pr_url = st.text_input("PR URL", value=st.session_state.pr_url,
+                           placeholder="https://github.com/VinUni-AI20k/PR-Demo/pull/1")
+    submitted = st.form_submit_button("Run review")
+
+if submitted:
+    try:
+        normalized = normalize_pr_url(pr_url)
+    except ValueError as exc:
+        st.error(str(exc))
+    else:
+        st.session_state.pr_url = normalized
+        st.session_state.thread_id = str(uuid.uuid4())
+        st.session_state.interrupt_payload = None
+        st.session_state.final = None
+        st.session_state.error = None
+        st.query_params["thread"] = st.session_state.thread_id
+        with st.spinner("Fetching PR and analyzing changes..."):
+            perform_review()
+
+if st.session_state.error:
+    st.error(st.session_state.error)
+if st.session_state.retryable and st.session_state.thread_id:
+    st.info("A previous operation did not finish. Retry continues from its checkpoint.")
+    if st.button("Retry operation"):
+        perform_review()
         st.rerun()
 
-# Render final state, if reached
+payload = st.session_state.interrupt_payload
+if st.session_state.thread_id and st.session_state.thread_id.startswith("fixture-"):
+    st.info("Fixture demo session: analysis and prior posting outcomes are simulated.")
+if payload is not None:
+    with st.container(border=True):
+        answer = render_approval_card(payload) if payload["kind"] == "approval_request" else render_escalation_card(payload)
+    if answer is not None:
+        with st.spinner("Applying reviewer response..."):
+            perform_review(answer)
+        st.rerun()
+
 if st.session_state.final is not None:
     final = st.session_state.final
-    action = final.get("final_action", "?")
-    if action.startswith("auto") or action.startswith("committed"):
-        st.success(f"✓ {action} — comment posted to {st.session_state.pr_url}")
+    action = final.get("final_action")
+    if action in {"committed", "auto_committed"}:
+        st.success("Review comment posted." + (" Automatically routed by confidence." if action == "auto_committed" else ""))
     elif action == "rejected":
-        st.warning("Rejected — no comment posted")
+        st.warning("Rejected — no comment posted.")
+    elif action in {"commit_failed", "auto_commit_failed"}:
+        st.error("Posting failed or delivery could not be confirmed. Inspect the PR before retrying to avoid a duplicate.")
     else:
-        st.info(f"final_action = {action}")
-    st.caption(f"thread_id = {st.session_state.thread_id}  ·  replay: "
-               f"`uv run python -m audit.replay --thread {st.session_state.thread_id}`")
+        st.info(f"Review status: {action}")
+    if final.get("analysis"):
+        st.metric("Final review confidence", f"{final['analysis'].confidence:.1%}")
+        st.markdown(final.get("posted_comment_body") or final["analysis"].summary)
+    st.link_button("View PR on GitHub", st.session_state.pr_url)
+
+if st.session_state.thread_id:
+    st.caption(f"Session: {st.session_state.thread_id}")
+    with st.expander("Audit trail"):
+        try:
+            events = asyncio.run(replay_events(st.session_state.thread_id))
+            if events:
+                st.dataframe(events, hide_index=True, width="stretch")
+            else:
+                st.caption("No audit events recorded yet.")
+        except Exception:
+            st.warning("Audit events could not be loaded.")

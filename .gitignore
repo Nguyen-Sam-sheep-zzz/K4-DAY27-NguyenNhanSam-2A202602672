@@ -27,3 +27,9 @@ Thumbs.db
 *.sqlite
 *.db
 scratch/
+.tools/
+.cache/
+*.db-wal
+*.db-shm
+*.db-journal
+.pytest_cache/

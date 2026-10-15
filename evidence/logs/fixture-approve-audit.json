@@ -1,0 +1,74 @@
+[
+  {
+    "id": 5,
+    "timestamp": "2026-10-15T07:15:38.916774+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "fetch_pr",
+    "confidence": 0.0,
+    "risk_level": "med",
+    "reviewer_id": null,
+    "decision": "pending",
+    "reason": "Fetched 1 files, head=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 6,
+    "timestamp": "2026-10-15T07:15:38.933766+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "analyze",
+    "confidence": 0.65,
+    "risk_level": "med",
+    "reviewer_id": null,
+    "decision": "pending",
+    "reason": "Migration behavior needs clarification.",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 7,
+    "timestamp": "2026-10-15T07:15:38.943366+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "route",
+    "confidence": 0.65,
+    "risk_level": "med",
+    "reviewer_id": null,
+    "decision": "pending",
+    "reason": "confidence=0.6500; branch=human_approval",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 8,
+    "timestamp": "2026-10-15T07:15:38.951519+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "human_approval_requested",
+    "confidence": 0.65,
+    "risk_level": "med",
+    "reviewer_id": null,
+    "decision": "pending",
+    "reason": "Waiting for approve/reject/edit",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 9,
+    "timestamp": "2026-10-15T07:15:38.991107+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "human_approval",
+    "confidence": 0.65,
+    "risk_level": "med",
+    "reviewer_id": "fixture-reviewer",
+    "decision": "approve",
+    "reason": "Fixture verification.",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 10,
+    "timestamp": "2026-10-15T07:15:39.008306+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "commit",
+    "confidence": 0.65,
+    "risk_level": "med",
+    "reviewer_id": "fixture-reviewer",
+    "decision": "approve",
+    "reason": "committed",
+    "execution_time_ms": 0
+  }
+]

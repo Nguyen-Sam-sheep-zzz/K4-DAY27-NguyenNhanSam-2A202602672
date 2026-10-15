@@ -1,5 +1,12 @@
 # Day27 — Track 3: HITL PR Review Agent
 
+> **Bản hoàn thiện:** xem [báo cáo và đối chiếu yêu cầu](docs/LAB27_REPORT.md),
+> [hướng dẫn Windows](docs/SETUP_WINDOWS.md), [kịch bản demo](docs/DEMO_SCRIPT.md)
+> và [bằng chứng kiểm thử](evidence/README.md). Đề bài gốc được giữ bên dưới.
+> Ngưỡng thực thi theo `common/schemas.py`: **≥0.73 / 0.58–<0.73 / <0.58**.
+> Hãy dùng kết quả live được lưu trong evidence để đánh giá; model không bảo đảm
+> luôn cho cùng confidence. `auto_approve` đăng comment, không merge hay approve PR.
+
 A 2-hour lab that builds a human-in-the-loop pull-request review agent in **LangGraph**, end-to-end.
 
 > 1. Agent reads a PR, analyzes code changes, proposes review comments.

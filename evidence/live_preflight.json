@@ -1,0 +1,51 @@
+{
+  "timestamp_utc": "2026-10-15T07:42:08.649629+00:00",
+  "mode": "read-only GitHub; synthetic LLM smoke; no posting",
+  "python": "3.12.14",
+  "packages": {
+    "langgraph": "1.2.0",
+    "langgraph-checkpoint-sqlite": "3.1.2",
+    "streamlit": "1.66.0",
+    "langchain-openai": "1.2.1"
+  },
+  "configuration": {
+    "OPENROUTER_API_KEY": "set",
+    "LLM_MODEL": "set",
+    "LLM_BASE_URL": "set",
+    "GITHUB_TOKEN": "set",
+    "GITHUB_USER": "set"
+  },
+  "provider_host": "sv.devquote.shop",
+  "model": "gpt-6-luna",
+  "github": {
+    "status": "passed",
+    "authenticated_user": "Nguyen-Sam-sheep-zzz",
+    "reviewer_identity_matches": true,
+    "prs": [
+      {
+        "url": "https://github.com/VinUni-AI20k/PR-Demo/pull/1",
+        "head_sha": "164615656d47c67b0857daf02fcd412c55333d5d",
+        "files": 3,
+        "diff_chars": 3228
+      },
+      {
+        "url": "https://github.com/VinUni-AI20k/PR-Demo/pull/2",
+        "head_sha": "501f95e016f9cd241cb1a7dd60b9a27102bcb413",
+        "files": 4,
+        "diff_chars": 4337
+      }
+    ]
+  },
+  "llm": {
+    "status": "passed",
+    "input": "synthetic spelling-only diff",
+    "analysis": {
+      "summary": "Corrects the misspelling “Instal” to “Install” in the README.",
+      "risk_factors": [],
+      "comments": [],
+      "confidence": 0.99,
+      "confidence_reasoning": "The diff contains only a one-word spelling correction in the README; there is no additional behavior or context to assess.",
+      "escalation_questions": []
+    }
+  }
+}

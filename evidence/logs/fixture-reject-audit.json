@@ -1,0 +1,74 @@
+[
+  {
+    "id": 11,
+    "timestamp": "2026-10-15T07:15:39.036793+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "fetch_pr",
+    "confidence": 0.0,
+    "risk_level": "med",
+    "reviewer_id": null,
+    "decision": "pending",
+    "reason": "Fetched 1 files, head=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 12,
+    "timestamp": "2026-10-15T07:15:39.052628+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "analyze",
+    "confidence": 0.65,
+    "risk_level": "med",
+    "reviewer_id": null,
+    "decision": "pending",
+    "reason": "Migration behavior needs clarification.",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 13,
+    "timestamp": "2026-10-15T07:15:39.061259+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "route",
+    "confidence": 0.65,
+    "risk_level": "med",
+    "reviewer_id": null,
+    "decision": "pending",
+    "reason": "confidence=0.6500; branch=human_approval",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 14,
+    "timestamp": "2026-10-15T07:15:39.070534+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "human_approval_requested",
+    "confidence": 0.65,
+    "risk_level": "med",
+    "reviewer_id": null,
+    "decision": "pending",
+    "reason": "Waiting for approve/reject/edit",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 15,
+    "timestamp": "2026-10-15T07:15:39.106695+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "human_approval",
+    "confidence": 0.65,
+    "risk_level": "med",
+    "reviewer_id": "fixture-reviewer",
+    "decision": "reject",
+    "reason": "Fixture verification.",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 16,
+    "timestamp": "2026-10-15T07:15:39.124426+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "commit",
+    "confidence": 0.65,
+    "risk_level": "med",
+    "reviewer_id": "fixture-reviewer",
+    "decision": "reject",
+    "reason": "rejected",
+    "execution_time_ms": 0
+  }
+]

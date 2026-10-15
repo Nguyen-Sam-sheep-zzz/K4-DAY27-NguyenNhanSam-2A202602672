@@ -1,0 +1,110 @@
+[
+  {
+    "id": 34,
+    "timestamp": "2026-10-15T07:15:39.488886+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "fetch_pr",
+    "confidence": 0.0,
+    "risk_level": "med",
+    "reviewer_id": null,
+    "decision": "pending",
+    "reason": "Fetched 1 files, head=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 35,
+    "timestamp": "2026-10-15T07:15:39.504661+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "analyze",
+    "confidence": 0.4,
+    "risk_level": "high",
+    "reviewer_id": null,
+    "decision": "pending",
+    "reason": "Migration behavior needs clarification.",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 36,
+    "timestamp": "2026-10-15T07:15:39.512658+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "route",
+    "confidence": 0.4,
+    "risk_level": "high",
+    "reviewer_id": null,
+    "decision": "escalate",
+    "reason": "confidence=0.4000; branch=escalate",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 37,
+    "timestamp": "2026-10-15T07:15:39.521600+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "escalation_requested",
+    "confidence": 0.4,
+    "risk_level": "high",
+    "reviewer_id": null,
+    "decision": "pending",
+    "reason": "Questions: How are existing task rows migrated?",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 38,
+    "timestamp": "2026-10-15T07:15:39.558094+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "escalate",
+    "confidence": 0.4,
+    "risk_level": "high",
+    "reviewer_id": "fixture-reviewer",
+    "decision": "escalate",
+    "reason": "Q: How are existing task rows migrated? A: Fixture answer: migration will ship in a separate change.",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 39,
+    "timestamp": "2026-10-15T07:15:39.572988+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "synthesize",
+    "confidence": 0.68,
+    "risk_level": "med",
+    "reviewer_id": null,
+    "decision": "pending",
+    "reason": "Migration behavior needs clarification.",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 40,
+    "timestamp": "2026-10-15T07:15:39.582520+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "escalation_confirmation_requested",
+    "confidence": 0.68,
+    "risk_level": "med",
+    "reviewer_id": null,
+    "decision": "pending",
+    "reason": "Waiting for approve/reject/edit",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 41,
+    "timestamp": "2026-10-15T07:15:39.608341+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "human_approval",
+    "confidence": 0.68,
+    "risk_level": "med",
+    "reviewer_id": "fixture-reviewer",
+    "decision": "reject",
+    "reason": "Fixture verification.",
+    "execution_time_ms": 0
+  },
+  {
+    "id": 42,
+    "timestamp": "2026-10-15T07:15:39.624346+00:00",
+    "agent_id": "pr-review-agent@v0.1",
+    "action": "commit",
+    "confidence": 0.68,
+    "risk_level": "med",
+    "reviewer_id": "fixture-reviewer",
+    "decision": "reject",
+    "reason": "rejected",
+    "execution_time_ms": 0
+  }
+]
